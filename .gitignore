@@ -48,5 +48,5 @@ obj/
 .*_defconfig
 *.old.dtb
 *.pretty.dts
-orange-pi-*.tar.gz
+*orange-pi-*.tar.gz
 
