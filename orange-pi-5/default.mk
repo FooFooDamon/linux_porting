@@ -26,7 +26,7 @@ include __ver__.mk
 
 ARCH := arm64
 CROSS_COMPILE := aarch64-linux-gnu-
-PKG_FILE ?= ./orange-pi-5.10-rk3588.tar.gz
+PKG_FILE ?= ./linux-orangepi-orange-pi-5.10-rk3588.tar.gz
 PKG_URL ?= https://github.com/orangepi-xunlong/linux-orangepi/archive/refs/heads/orange-pi-5.10-rk3588.tar.gz
 KERNEL_IMAGE := Image
 DTS_PATH := arch/arm64/boot/dts/rockchip/rk3588s-orangepi-5.dts
