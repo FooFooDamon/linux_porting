@@ -49,7 +49,7 @@
 		enable-active-high;
 		regulator-boot-on;
 		regulator-always-on;
-		gpios = <&gpio0 RK_PC5 GPIO_ACTIVE_HIGH>;
+		gpios = <&gpio2 RK_PA1 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <50000>;
 		vin-supply = <&vcc5v0_sys>;
 	};
@@ -421,4 +421,13 @@
 	vpcie3v3-supply = <&vcc3v3_pcie2x1l2>;
 	rockchip,skip-scan-in-resume;
 	status = "okay";
+};
+
+&pinctrl
+{
+	gpio-func {
+		leds_gpio: leds-gpio {
+			rockchip,pins = <1 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
 };
