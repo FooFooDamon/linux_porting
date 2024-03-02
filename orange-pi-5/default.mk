@@ -27,15 +27,21 @@ include __ver__.mk
 ARCH := arm64
 CROSS_COMPILE := aarch64-linux-gnu-
 PKG_FILE ?= ./linux-orangepi-orange-pi-5.10-rk35xx.tar.gz
-PKG_URL ?= https://github.com/orangepi-xunlong/linux-orangepi/archive/refs/heads/orange-pi-5.10-rk35xx.tar.gz
+#PKG_URL := https://github.com/orangepi-xunlong/linux-orangepi/archive/refs/heads/orange-pi-5.10-rk35xx.tar.gz
+PKG_URL ?= https://github.com/orangepi-xunlong/linux-orangepi/archive/b03bc7f3661bd8fd41f8ca8011e28acdaeec0a67.tar.gz
 KERNEL_IMAGE := Image
 DTS_PATH := arch/arm64/boot/dts/rockchip/rk3588s-orangepi-5.dts
-INSTALL_DIR ?= ${HOME}/tftpd/orange-pi-5
+INSTALL_DIR ?= $(if $(filter aarch64, $(shell uname -m)), /boot, ${HOME}/tftpd/orange-pi-5)
 DEFCONFIG := arch/arm64/configs/rockchip_linux_defconfig
-CUSTOM_FILES ?= ${DEFCONFIG} \
-    ${DTS_PATH}
+EXT_TARGETS += drivers/media/i2c/ov7670.ko \
+    drivers/net/can/usb/peak_usb/peak_usb.ko
+CUSTOM_FILES +=
 
 include linux_kernel.mk
+
+USER_HELP_PRINTS := ${DEFAULT_USER_HELP_PRINTS}
+
+${APPLY_DEFAULT_MODULE_TARGET_ALIAS}
 
 endif
 
