@@ -6,12 +6,14 @@
 # Copyright (c) 2024 Man Hung-Coeng <udc577@126.com>
 #
 
-KRELEASE ?= 5.10
-export KERNEL_IMAGE := Image
-export EXTRA_TARGETS := dtbs
-TARGETS := ${KERNEL_IMAGE} all menuconfig help \
-    download clean distclean install uninstall ${EXTRA_TARGETS}
+KVER ?= $(firstword $(wildcard [0-9]*.[0-9]*))
+KERNEL_IMAGE ?= Image
+CORE_TARGETS := $(shell ${MAKE} -C ${KVER} help -s | sed -n "1,/^Extended directive/p" | awk '{ print $$3 }' | grep -v '^[-[*{<]')
+EXT_TARGETS := $(shell ${MAKE} -C ${KVER} showvars -s | grep EXT_TARGETS | awk -F = '{ print $$2 }')
+__MODULES := $(filter %.ko, ${EXT_TARGETS})
+EXT_TARGETS += ${__MODULES:.ko=.ko-install}
+USER_TARGETS := $(foreach i, $(notdir ${__MODULES:.ko=}), ${i} install_${i})
 
-${TARGETS}: %:
-	${MAKE} $@ -C ${KRELEASE}
+${KERNEL_IMAGE} ${CORE_TARGETS} ${EXT_TARGETS} ${USER_TARGETS} help: %:
+	${MAKE} $@ -C ${KVER}
 
