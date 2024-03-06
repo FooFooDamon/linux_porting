@@ -40,9 +40,25 @@ CUSTOM_FILES += arch/arm64/boot/dts/rockchip/Makefile \
 
 include linux_kernel.mk
 
-USER_HELP_PRINTS := ${DEFAULT_USER_HELP_PRINTS}
+USER_HELP_PRINTS := ${DEFAULT_USER_HELP_PRINTS} \
+    echo "  * ${MAKE} bootscript"; \
+    echo "  * ${MAKE} bootscript_install";
 
 ${APPLY_DEFAULT_MODULE_TARGET_ALIAS}
+
+.PHONY: bootscript bootscript_install
+
+install: bootscript_install
+
+bootscript_install: bootscript
+	install boot.cmd boot.scr ${INSTALL_DIR}/
+	krelease=$$(${MAKE} kernelrelease -C ${SRC_ROOT_DIR} ${MAKE_ARGS} -s | grep "^[0-9]\+"); \
+	echo "fdt_dir=dtbs/$${krelease}" > ${INSTALL_DIR}/fdt_dir.txt
+
+bootscript: boot.scr
+
+boot.scr: boot.cmd
+	mkimage -C none -A arm -T script -d $< $@
 
 endif
 

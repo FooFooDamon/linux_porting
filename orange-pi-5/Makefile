@@ -12,7 +12,8 @@ CORE_TARGETS := $(shell ${MAKE} -C ${KVER} help -s | sed -n "1,/^Extended direct
 EXT_TARGETS := $(shell ${MAKE} -C ${KVER} showvars -s | grep EXT_TARGETS | awk -F = '{ print $$2 }')
 __MODULES := $(filter %.ko, ${EXT_TARGETS})
 EXT_TARGETS += ${__MODULES:.ko=.ko-install}
-USER_TARGETS := $(foreach i, $(notdir ${__MODULES:.ko=}), ${i} install_${i})
+USER_TARGETS := $(foreach i, $(notdir ${__MODULES:.ko=}), ${i} install_${i}) \
+    bootscript bootscript_install
 
 ${KERNEL_IMAGE} ${CORE_TARGETS} ${EXT_TARGETS} ${USER_TARGETS} help: %:
 	${MAKE} $@ -C ${KVER}
