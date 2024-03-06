@@ -21,12 +21,19 @@ if test -e ${devtype} ${devnum} ${prefix}orangepiEnv.txt; then
 	env import -t ${load_addr} ${filesize}
 fi
 
+setenv fdt_dir dtb
+
 if test -e ${devtype} ${devnum} ${prefix}fdt_dir.txt; then
 	load ${devtype} ${devnum} ${load_addr} ${prefix}fdt_dir.txt
 	env import -t ${load_addr} ${filesize}
-	echo "Device tree directory is set depending on kernel release: ${prefix}${fdt_dir}"
-else
-	setenv fdt_dir dtb
+	if test -e ${devtype} ${devnum} ${prefix}${fdt_dir}; then
+		echo "Device tree directory is set depending on kernel release: ${prefix}${fdt_dir}"
+	else
+		setenv fdt_dir dtb
+	fi
+fi
+
+if test "${fdt_dir}" = "dtb"; then
 	echo "Device tree directory is fixed to: ${prefix}${fdt_dir}"
 fi
 
