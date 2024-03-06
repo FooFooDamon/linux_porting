@@ -35,7 +35,8 @@ INSTALL_DIR ?= $(if $(filter aarch64, $(shell uname -m)), /boot, ${HOME}/tftpd/o
 DEFCONFIG := arch/arm64/configs/rockchip_linux_defconfig
 EXT_TARGETS += drivers/media/i2c/ov7670.ko \
     drivers/net/can/usb/peak_usb/peak_usb.ko
-CUSTOM_FILES +=
+CUSTOM_FILES += arch/arm64/boot/dts/rockchip/Makefile \
+    arch/arm64/boot/dts/rockchip/overlay/Makefile
 
 include linux_kernel.mk
 
