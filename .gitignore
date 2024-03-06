@@ -50,4 +50,5 @@ obj/
 *.pretty.dts
 *orange-pi-*.tar.gz
 linux-orangepi-*.tar.gz
+*.scr
 
