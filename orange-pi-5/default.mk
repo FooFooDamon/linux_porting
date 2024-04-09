@@ -42,7 +42,8 @@ include linux_kernel.mk
 
 USER_HELP_PRINTS := ${DEFAULT_USER_HELP_PRINTS} \
     echo "  * ${MAKE} bootscript"; \
-    echo "  * ${MAKE} bootscript_install";
+    echo "  * ${MAKE} bootscript_install"; \
+    echo "  * ${MAKE} fix_clangd_db";
 
 ${APPLY_DEFAULT_MODULE_TARGET_ALIAS}
 
@@ -59,6 +60,9 @@ bootscript: boot.scr
 
 boot.scr: boot.cmd
 	mkimage -C none -A arm -T script -d $< $@
+
+fix_clangd_db:
+	sed -i -e '/"-f/d' -e '/"-mabi=lp64"/d' ${SRC_ROOT_DIR}/compile_commands.json
 
 endif
 
