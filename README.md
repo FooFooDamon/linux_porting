@@ -17,11 +17,15 @@
 and perform the following operations:
 
 ````
+$ export KVER=6.1.43 # The version you want to build
+$
 $ make init # Only needed at the first time
 $
 $ make help # If you need help
 $
 $ make # Or other directives depending on your need and the help info above
+$
+$ sudo make xxx_install KVER=${KVER} # KVER must be specified explicitly under sudo mode
 ````
 
 ## 许可证 | License
