@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
+
 dtbo-$(CONFIG_ARCH_ROCKCHIP) += \
 	rk3588-i2c1-m2.dtbo \
 	rk3588-i2c1-m4.dtbo \
@@ -47,24 +48,12 @@ dtbo-$(CONFIG_ARCH_ROCKCHIP) += \
 	rk3588-can2-m1.dtbo \
 	rk3588-lcd1.dtbo \
 	rk3588-lcd2.dtbo \
-	rk3588-opi5plus-lcd.dtbo \
-	rk3588-opi5pro-lcd.dtbo \
 	rk3588-ov13850-c1.dtbo \
 	rk3588-ov13850-c2.dtbo \
 	rk3588-ov13850-c3.dtbo \
 	rk3588-ov13855-c1.dtbo \
 	rk3588-ov13855-c2.dtbo \
 	rk3588-ov13855-c3.dtbo \
-	rk3588-opi5pro-ov13855-c1.dtbo \
-	rk3588-opi5pro-ov13855-c2.dtbo \
-	rk3588-opi5pro-ov13850-c1.dtbo \
-	rk3588-opi5pro-ov13850-c2.dtbo \
-	rk3588-opi5plus-gc5035.dtbo \
-	rk3588-opi5plus-ov13850.dtbo \
-	rk3588-opi5plus-ov13855.dtbo \
-	rk3588-opi5max-c0.dtbo \
-	rk3588-opi5max-c1.dtbo \
-	rk3588-opi5max-c2.dtbo \
 	rk3588-dmc.dtbo \
 	rk3588-ssd-sata0.dtbo \
 	rk3588-ssd-sata2.dtbo \
@@ -81,9 +70,6 @@ dtbo-$(CONFIG_ARCH_ROCKCHIP) += \
 	rk3588-spi4-m1-cs0-cs1-spidev.dtbo \
 	rk3588-spi4-m2-cs0-spidev.dtbo \
 	rk3588-disable-led.dtbo \
-	rk3588-opi5plus-disable-leds.dtbo \
-	rk3588-opi5pro-disable-leds.dtbo \
-	rk3588-opi5pro-sfc.dtbo
 
 scr-$(CONFIG_ARCH_ROCKCHIP) += \
 	rk3588-fixup.scr
