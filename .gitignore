@@ -37,6 +37,7 @@ linux_kernel.mk
 logs
 *.log
 .build
+.srctree_parent_dir
 _tmp_
 *.tmp
 *.dat
