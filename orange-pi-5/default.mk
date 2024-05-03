@@ -37,7 +37,8 @@ EXT_TARGETS += drivers/media/i2c/ov7670.ko \
     drivers/net/can/usb/peak_usb/peak_usb.ko
 CUSTOM_FILES += arch/arm64/boot/dts/rockchip/Makefile \
     arch/arm64/boot/dts/rockchip/overlay/Makefile \
-    arch/arm64/boot/dts/rockchip/rk3588s.dtsi
+    arch/arm64/boot/dts/rockchip/rk3588s.dtsi \
+    drivers/media/i2c/ov13855.c
 
 include linux_kernel.mk
 
