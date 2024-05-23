@@ -35,7 +35,7 @@ EXT_TARGETS := $(shell ${MAKE} -C ${KVER} showvars -s | grep EXT_TARGETS | awk -
 __MODULES := $(filter %.ko, ${EXT_TARGETS})
 EXT_TARGETS += ${__MODULES:.ko=.ko-install}
 USER_TARGETS := $(foreach i, $(notdir ${__MODULES:.ko=}), ${i} install_${i}) \
-    bootscript bootscript_install
+    bootscript bootscript_install fix_clangd_db
 
 ${KERNEL_IMAGE} ${CORE_TARGETS} ${EXT_TARGETS} ${USER_TARGETS} help: %:
 	${MAKE} $@ -C ${KVER}
