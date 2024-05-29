@@ -37,8 +37,10 @@ EXT_TARGETS += drivers/media/i2c/ov7670.ko \
     drivers/net/can/usb/peak_usb/peak_usb.ko \
     drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu.ko
 CUSTOM_FILES += arch/arm64/boot/dts/rockchip/Makefile \
-    arch/arm64/boot/dts/rockchip/overlay/Makefile \
     arch/arm64/boot/dts/rockchip/rk3588s.dtsi \
+    arch/arm64/boot/dts/rockchip/rk3588s-orangepi-5-camera2.dtsi \
+    arch/arm64/boot/dts/rockchip/overlay/Makefile \
+    arch/arm64/boot/dts/rockchip/overlay/rk3588-ov13855-c2.dts \
     drivers/media/i2c/ov13855.c
 
 include linux_kernel.mk
