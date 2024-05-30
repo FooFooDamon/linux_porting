@@ -67,22 +67,6 @@
 			linux,default-trigger-delay-ms = <0>;
 		};
 	};
-
-	fan: pwm-fan {
-		compatible = "pwm-fan";
-		#cooling-cells = <2>;
-		pwms = <&pwm12 0 50000 0>;
-		cooling-levels = <0 50 100 150 200 255>;
-		rockchip,temp-trips = <
-			50000   1
-			55000   2
-			60000   3
-			65000   4
-			70000   5
-		>;
-
-		status = "okay";
-	};
 };
 
 &gmac1 {
@@ -228,12 +212,6 @@
 	status = "disabled";
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart1m1_xfer>;
-};
-
-&pwm12 {
-	status = "okay";
-	pinctrl-names = "active";
-	pinctrl-0 = <&pwm12m1_pins>;
 };
 
 &pwm13 {
