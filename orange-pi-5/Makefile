@@ -40,3 +40,5 @@ USER_TARGETS := $(foreach i, $(notdir ${__MODULES:.ko=}), ${i} install_${i}) \
 ${KERNEL_IMAGE} ${CORE_TARGETS} ${EXT_TARGETS} ${USER_TARGETS} help: %:
 	${MAKE} $@ -C ${KVER}
 
+-include $(if $(wildcard *.priv.mk), $(wildcard *.priv.mk), <placeholder>.mk)
+
