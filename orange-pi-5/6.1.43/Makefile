@@ -27,4 +27,5 @@ CUSTOM_FILES += net/mac80211/util.c \
     drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu_regs.h
 
 include ../default.mk
+-include ../default.priv.mk
 
