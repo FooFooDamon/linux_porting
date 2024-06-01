@@ -40,5 +40,6 @@ USER_TARGETS := $(foreach i, $(notdir ${__MODULES:.ko=}), ${i} install_${i}) \
 ${KERNEL_IMAGE} ${CORE_TARGETS} ${EXT_TARGETS} ${USER_TARGETS} help: %:
 	${MAKE} $@ -C ${KVER}
 
--include $(if $(wildcard *.priv.mk), $(wildcard *.priv.mk), <placeholder>.mk)
+PRIV_MAKEFILES := $(filter-out default.priv.mk,$(wildcard *.priv.mk))
+-include $(if ${PRIV_MAKEFILES}, ${PRIV_MAKEFILES}, <placeholder>.mk)
 
