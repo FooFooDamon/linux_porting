@@ -78,7 +78,7 @@
 #define OV13855_REG_VALUE_16BIT		2
 #define OV13855_REG_VALUE_24BIT		3
 
-#define OV13855_LANES			4
+//#define OV13855_LANES			4
 #define OV13855_BITS_PER_SAMPLE		10
 
 #define OV13855_CHIP_REVISION_REG	0x302A
@@ -145,6 +145,7 @@ struct ov13855 {
 	const char		*module_facing;
 	const char		*module_name;
 	const char		*len_name;
+	struct v4l2_mbus_config v4l2_mbus_conf;
 };
 
 #define to_ov13855(sd) container_of(sd, struct ov13855, subdev)
@@ -1095,7 +1096,7 @@ static int ov13855_set_fmt(struct v4l2_subdev *sd,
 	const struct ov13855_mode *mode;
 	s64 h_blank, vblank_def;
 	u64 pixel_rate = 0;
-	u32 lane_num = OV13855_LANES;
+	u32 lane_num = ov13855->v4l2_mbus_conf.bus.mipi_csi2.num_data_lanes; // OV13855_LANES;
 
 	mutex_lock(&ov13855->mutex);
 
@@ -1570,9 +1571,13 @@ static int ov13855_enum_frame_interval(struct v4l2_subdev *sd,
 static int ov13855_g_mbus_config(struct v4l2_subdev *sd, unsigned int pad,
 				struct v4l2_mbus_config *config)
 {
+	struct ov13855 *ov13855 = to_ov13855(sd);
+	struct v4l2_mbus_config_mipi_csi2 *csi2_conf = &ov13855->v4l2_mbus_conf.bus.mipi_csi2;
 
-	config->type = V4L2_MBUS_CSI2_DPHY;
-	config->bus.mipi_csi2.num_data_lanes = OV13855_LANES;
+	config->type = ov13855->v4l2_mbus_conf.type; // V4L2_MBUS_CSI2_DPHY;
+	config->bus.mipi_csi2.num_data_lanes = csi2_conf->num_data_lanes; // OV13855_LANES;
+	memcpy(config->bus.mipi_csi2.data_lanes, csi2_conf->data_lanes, sizeof(csi2_conf->data_lanes));
+	config->bus.mipi_csi2.clock_lane = csi2_conf->clock_lane;
 
 	return 0;
 }
@@ -1633,6 +1638,47 @@ static const struct v4l2_subdev_ops ov13855_subdev_ops = {
 	.video	= &ov13855_video_ops,
 	.pad	= &ov13855_pad_ops,
 };
+
+static int ov13855_parse_data_lanes(struct ov13855 *ov13855)
+{
+	struct device *dev = &ov13855->client->dev;
+	struct device_node *node = dev->of_node;
+	struct v4l2_mbus_config_mipi_csi2 *csi2_conf = &ov13855->v4l2_mbus_conf.bus.mipi_csi2;
+	u32 lanes[sizeof(csi2_conf->data_lanes) / sizeof(csi2_conf->data_lanes[0])] = { 0 };
+	int ret;
+
+	if (!(node = of_get_child_by_name(node, "port")) || !(node = of_get_child_by_name(node, "endpoint")))
+	{
+		dev_err(dev, "Could not find node [port] or its child [endpoint]! Have you disable either/both of them?\n");
+
+		return -EINVAL;
+	}
+
+	ret = of_property_read_variable_u32_array(node, "data-lanes", lanes, 1, sizeof(lanes) / sizeof(lanes[0]));
+	if (ret <= 0)
+		dev_err(dev, "of_property_read_variable_u8_array(\"data-lanes\") returned %d\n", ret);
+	else
+	{
+		char buf[(sizeof(lanes) / sizeof(lanes[0])) * 4] = { 0 };
+		char *ptr = buf;
+		int i;
+
+		memset(&ov13855->v4l2_mbus_conf, 0, sizeof(ov13855->v4l2_mbus_conf));
+
+		ov13855->v4l2_mbus_conf.type = V4L2_MBUS_CSI2_DPHY;
+
+		csi2_conf->num_data_lanes = ret;
+		for (i = 0; i < ret; ++i)
+		{
+			csi2_conf->data_lanes[i] = lanes[i];
+			ptr += sprintf(ptr, "%d ", csi2_conf->data_lanes[i]);
+		}
+		buf[sizeof(buf) - 1] = '\0';
+		dev_notice(dev, "found %d data lanes: <%s>\n", csi2_conf->num_data_lanes, buf);
+	}
+
+	return ret;
+}
 
 static int ov13855_set_ctrl(struct v4l2_ctrl *ctrl)
 {
@@ -1708,7 +1754,7 @@ static int ov13855_initialize_controls(struct ov13855 *ov13855)
 	u32 h_blank;
 	int ret;
 	u64 dst_pixel_rate = 0;
-	u32 lane_num = OV13855_LANES;
+	u32 lane_num = ov13855->v4l2_mbus_conf.bus.mipi_csi2.num_data_lanes; // OV13855_LANES;
 
 	handler = &ov13855->ctrl_handler;
 	mode = ov13855->cur_mode;
@@ -1848,6 +1894,9 @@ static int ov13855_probe(struct i2c_client *client,
 
 	ov13855->client = client;
 	ov13855->cur_mode = &supported_modes[0];
+
+	if ((ret = ov13855_parse_data_lanes(ov13855)) <= 0)
+		return (ret < 0) ? ret : -ENODATA;
 
 	ov13855->xvclk = devm_clk_get(dev, "xvclk");
 	if (IS_ERR(ov13855->xvclk)) {
