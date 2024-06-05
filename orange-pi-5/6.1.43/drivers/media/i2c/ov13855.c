@@ -1765,7 +1765,7 @@ static int ov13855_initialize_controls(struct ov13855 *ov13855)
 
 	ov13855->link_freq = v4l2_ctrl_new_int_menu(handler, NULL,
 			V4L2_CID_LINK_FREQ,
-			1, 0, link_freq_items);
+			ARRAY_SIZE(link_freq_items) - 1, 0, link_freq_items);
 
 	dst_pixel_rate = (u32)link_freq_items[mode->link_freq_idx] / mode->bpp * 2 * lane_num;
 
@@ -1867,7 +1867,7 @@ static int ov13855_probe(struct i2c_client *client,
 	struct device_node *node = dev->of_node;
 	struct ov13855 *ov13855;
 	struct v4l2_subdev *sd;
-	char facing[2];
+	char facing[2] = { 0 };
 	int ret;
 
 	dev_info(dev, "driver version: %02x.%02x.%02x",
@@ -1965,12 +1965,7 @@ static int ov13855_probe(struct i2c_client *client,
 		goto err_power_off;
 #endif
 
-	memset(facing, 0, sizeof(facing));
-	if (strcmp(ov13855->module_facing, "back") == 0)
-		facing[0] = 'b';
-	else
-		facing[0] = 'f';
-
+	facing[0] = (0 == strcmp(ov13855->module_facing, "back")) ? 'b' : 'f';
 	snprintf(sd->name, sizeof(sd->name), "m%02d_%s_%s %s",
 		 ov13855->module_index, facing,
 		 OV13855_NAME, dev_name(sd->dev));
