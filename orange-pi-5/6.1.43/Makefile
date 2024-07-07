@@ -24,7 +24,21 @@ CUSTOM_FILES += net/mac80211/util.c \
     drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu_8723a.c \
     drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu_8723b.c \
     drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu_core.c \
-    drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu_regs.h
+    drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu_regs.h \
+    drivers/media/platform/rockchip/cif/capture.c \
+    drivers/media/platform/rockchip/cif/hw.c \
+    drivers/media/platform/rockchip/cif/hw.h \
+    drivers/media/platform/rockchip/cif/dev.c \
+    drivers/media/platform/rockchip/cif/dev.h \
+    drivers/media/platform/rockchip/cif/mipi-csi2.c \
+    drivers/media/platform/rockchip/cif/mipi-csi2.h \
+    drivers/media/platform/rockchip/cif/cif-scale.c \
+    drivers/media/platform/rockchip/cif/subdev-itf.c \
+    drivers/phy/rockchip/phy-rockchip-csi2-dphy-common.h \
+    drivers/phy/rockchip/phy-rockchip-samsung-dcphy.c \
+    drivers/phy/rockchip/phy-rockchip-samsung-dcphy.h \
+    drivers/phy/rockchip/phy-rockchip-csi2-dphy-hw.c \
+    drivers/phy/rockchip/phy-rockchip-csi2-dphy.c
 
 include ../default.mk
 -include ../default.priv.mk
