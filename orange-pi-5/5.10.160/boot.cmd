@@ -13,28 +13,50 @@ setenv bootlogo "false"
 setenv rootfstype "ext4"
 setenv docker_optimizations "on"
 setenv earlycon "off"
+setenv remote_env_file ""
+setenv fdt_dir "dtb"
+setenv kernel_load_cmd_default "load ${devtype} ${devnum} ${kernel_addr_r} ${prefix}Image"
+setenv kernel_load_cmd "${kernel_load_cmd_default}"
 
 echo "Boot script loaded from ${devtype} ${devnum}"
 
+#
+# User-defined environment variables:
+#	remote_env_file: Environment variables file on TFTP server. For example: remote_env_file=orange-pi-5/orangepiEnv.txt
+#	fdt_dir: For example: fdt_dir=dtbs/6.1.43
+#	kernel_load_cmd: Another example: kernel_load_cmd=tftp ${kernel_addr_r} orange-pi-5/Image
+#
+# Mandatory built-in environment variables for using TFTP command(s):
+#	ethdev: For example: ethdev=eth0
+#	ipaddr
+#	netmask
+#	serverip
+#	gatewayip
+#
 if test -e ${devtype} ${devnum} ${prefix}orangepiEnv.txt; then
 	load ${devtype} ${devnum} ${load_addr} ${prefix}orangepiEnv.txt
 	env import -t ${load_addr} ${filesize}
 fi
 
-setenv fdt_dir dtb
-
-if test -e ${devtype} ${devnum} ${prefix}fdt_dir.txt; then
-	load ${devtype} ${devnum} ${load_addr} ${prefix}fdt_dir.txt
-	env import -t ${load_addr} ${filesize}
-	if test -e ${devtype} ${devnum} ${prefix}${fdt_dir}; then
-		echo "Device tree directory is set depending on kernel release: ${prefix}${fdt_dir}"
+if test "${remote_env_file}" != ""; then
+	echo "Fetching an environment variables file via TFTP ..."
+	if tftp ${load_addr} ${remote_env_file}; then
+		echo "Applying environment variable additions and/or overrides ..."
+		env import -t ${load_addr} ${filesize}
 	else
-		setenv fdt_dir dtb
+		printenv && echo "" && help
 	fi
+fi
+
+if test ! -e ${devtype} ${devnum} ${prefix}${fdt_dir}; then
+	echo "*** Directory does not exist: ${prefix}${fdt_dir}"
+	test "${fdt_dir}" = "dtb" || setenv fdt_dir "dtb"
 fi
 
 if test "${fdt_dir}" = "dtb"; then
 	echo "Device tree directory is fixed to: ${prefix}${fdt_dir}"
+else
+	echo "Device tree directory is set depending on kernel release: ${prefix}${fdt_dir}"
 fi
 
 if test "${logo}" = "disabled"; then setenv logo "logo.nologo"; fi
@@ -56,7 +78,7 @@ setenv bootargs "root=${rootdev} rootwait rootfstype=${rootfstype} ${consoleargs
 if test "${docker_optimizations}" = "on"; then setenv bootargs "${bootargs} cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory swapaccount=1"; fi
 
 load ${devtype} ${devnum} ${ramdisk_addr_r} ${prefix}uInitrd
-load ${devtype} ${devnum} ${kernel_addr_r} ${prefix}Image
+run kernel_load_cmd || run kernel_load_cmd_default || exit
 
 load ${devtype} ${devnum} ${fdt_addr_r} ${prefix}${fdt_dir}/${fdtfile}
 fdt addr ${fdt_addr_r}
