@@ -59,7 +59,7 @@ install: bootscript_install
 bootscript_install: bootscript
 	install boot.cmd boot.scr ${INSTALL_DIR}/
 	krelease=$$(${MAKE} kernelrelease -C ${SRC_ROOT_DIR} ${MAKE_ARGS} -s | grep "^[0-9]\+"); \
-	echo "fdt_dir=dtbs/$${krelease}" > ${INSTALL_DIR}/fdt_dir.txt
+	sed -i "s/\(fdt_dir=\).*/\1dtbs\/$${krelease}/" ${INSTALL_DIR}/orangepiEnv.txt
 
 bootscript: boot.scr
 
