@@ -50,7 +50,7 @@ USER_HELP_PRINTS := ${DEFAULT_USER_HELP_PRINTS} \
     echo "  * ${MAKE} bootscript_install"; \
     echo "  * ${MAKE} fix_clangd_db";
 
-${APPLY_DEFAULT_MODULE_TARGET_ALIAS}
+${APPLY_DEFAULT_MODULE_TARGET_ALIASES}
 
 .PHONY: bootscript bootscript_install
 
