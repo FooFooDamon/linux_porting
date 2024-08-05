@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 
 #
-# Makefile wrapper for Linux kernel of Orange Pi 5.
+# Makefile wrapper for Linux kernel porting project.
 #
 # Copyright (c) 2024 Man Hung-Coeng <udc577@126.com>
 #
@@ -28,8 +28,8 @@ else
 
 include $(word 1, ${LAZY_CODING_MAKEFILES})
 
-ARCH := arm64
-CROSS_COMPILE := aarch64-linux-gnu-
+ARCH ?= arm64
+CROSS_COMPILE ?= aarch64-linux-gnu-
 PKG_FILE ?= ./linux-orangepi-b03bc7f3661bd8fd41f8ca8011e28acdaeec0a67.tar.gz
 # -- Rule of URL --
 # Example: GitHub
@@ -39,25 +39,18 @@ PKG_FILE ?= ./linux-orangepi-b03bc7f3661bd8fd41f8ca8011e28acdaeec0a67.tar.gz
 # Download by branch: <prefix>/archive/refs/heads/<branch>.<suffix>
 # Download by commit: <prefix>/archive/<full-commit-hash>.<suffix>
 # See also: https://docs.github.com/en/repositories/working-with-files/using-files/downloading-source-code-archives
-#PKG_URL := https://github.com/orangepi-xunlong/linux-orangepi/archive/refs/heads/orange-pi-5.10-rk35xx.tar.gz
+#PKG_URL ?= https://github.com/orangepi-xunlong/linux-orangepi/archive/refs/heads/orange-pi-5.10-rk35xx.tar.gz
 PKG_URL ?= https://github.com/orangepi-xunlong/linux-orangepi/archive/b03bc7f3661bd8fd41f8ca8011e28acdaeec0a67.tar.gz
-KERNEL_IMAGE := Image
-DTS_PATH := arch/${ARCH}/boot/dts/rockchip/rk3588s-orangepi-5.dts
+KERNEL_IMAGE ?= Image
+DTS_PATH ?= arch/${ARCH}/boot/dts/rockchip/rk3588s-orangepi-5.dts
 INSTALL_DIR ?= $(if $(filter aarch64, $(shell uname -m)), /boot, ${HOME}/tftpd/orange-pi-5)
-DEFCONFIG := arch/${ARCH}/configs/rockchip_linux_defconfig
-EXT_TARGETS += drivers/media/i2c/ov7670.ko \
-    drivers/net/can/usb/peak_usb/peak_usb.ko \
-    drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu.ko
-CUSTOM_FILES += arch/${ARCH}/boot/dts/rockchip/Makefile \
-    arch/${ARCH}/boot/dts/rockchip/rk3588s.dtsi \
-    arch/${ARCH}/boot/dts/rockchip/rk3588s-orangepi-5-camera2.dtsi \
-    arch/${ARCH}/boot/dts/rockchip/overlay/Makefile \
-    arch/${ARCH}/boot/dts/rockchip/overlay/rk3588-ov13855-c2.dts \
-    drivers/media/i2c/ov13855.c
+DEFCONFIG ?= arch/${ARCH}/configs/rockchip_linux_defconfig
+EXT_TARGETS += drivers/net/can/usb/peak_usb/peak_usb.ko
+CUSTOM_FILES +=
 
 include $(word 2, ${LAZY_CODING_MAKEFILES})
 
-USER_HELP_PRINTS := ${DEFAULT_USER_HELP_PRINTS} \
+USER_HELP_PRINTS ?= ${DEFAULT_USER_HELP_PRINTS} \
     echo "  * ${MAKE} bootscript"; \
     echo "  * ${MAKE} bootscript_install"; \
     echo "  * ${MAKE} fix_clangd_db";
