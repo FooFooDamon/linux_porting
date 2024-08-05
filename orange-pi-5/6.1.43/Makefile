@@ -33,5 +33,5 @@ CUSTOM_FILES += net/mac80211/util.c \
     drivers/phy/rockchip/phy-rockchip-csi2-dphy.c
 
 include ../common.mk
-include ../../include_me.mk
+include ../../wrapper.mk
 

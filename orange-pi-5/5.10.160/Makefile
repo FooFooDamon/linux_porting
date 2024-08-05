@@ -4,5 +4,5 @@ EXT_TARGETS +=
 CUSTOM_FILES +=
 
 include ../common.mk
-include ../../include_me.mk
+include ../../wrapper.mk
 
