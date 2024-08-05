@@ -6,6 +6,17 @@
 # Copyright (c) 2024 Man Hung-Coeng <udc577@126.com>
 #
 
+ENABLE_SELECTOR ?= 0
+
+ifeq (${ENABLE_SELECTOR},0)
+
+all prepare:
+	@echo '*** DO NOT execute any make commands in this directory since it will take much more time to parse.'
+	@echo 'Switch to the sub-directory of a specific version to do this.'
+	@echo 'However, if you insist, do "export ENABLE_SELECTOR=1" before executing any make commands.'
+
+else
+
 $(foreach i, __VER_LIST __VER_COUNT, $(eval override undefine ${i}))
 __VER_LIST := $(wildcard [0-9]*.[0-9]*)
 __VER_COUNT := $(words ${__VER_LIST})
@@ -42,4 +53,6 @@ ${KERNEL_IMAGE} ${CORE_TARGETS} ${EXT_TARGETS} ${USER_TARGETS} help: %:
 
 PRIV_MAKEFILES := $(filter-out default.priv.mk,$(wildcard *.priv.mk))
 -include $(if ${PRIV_MAKEFILES}, ${PRIV_MAKEFILES}, <placeholder>.mk)
+
+endif # ifeq (${ENABLE_SELECTOR},0)
 
