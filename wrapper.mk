@@ -50,29 +50,7 @@ CUSTOM_FILES +=
 
 include $(word 2, ${LAZY_CODING_MAKEFILES})
 
-USER_HELP_PRINTS ?= ${DEFAULT_USER_HELP_PRINTS} \
-    echo "  * ${MAKE} bootscript"; \
-    echo "  * ${MAKE} bootscript_install"; \
-    echo "  * ${MAKE} fix_clangd_db";
-
 ${APPLY_DEFAULT_MODULE_TARGET_ALIASES}
-
-.PHONY: bootscript bootscript_install
-
-install: bootscript_install
-
-bootscript_install: bootscript
-	install boot.cmd boot.scr ${INSTALL_DIR}/
-	krelease=$$(${MAKE} kernelrelease -C ${SRC_ROOT_DIR} ${MAKE_ARGS} -s | grep "^[0-9]\+"); \
-	sed -i "s/\(fdt_dir=\).*/\1dtbs\/$${krelease}/" ${INSTALL_DIR}/orangepiEnv.txt
-
-bootscript: boot.scr
-
-boot.scr: boot.cmd
-	mkimage -C none -A arm -T script -d $< $@
-
-fix_clangd_db:
-	sed -i -e '/"-f/d' -e '/"-mabi=lp64"/d' ${SRC_ROOT_DIR}/compile_commands.json
 
 -include ../../rsync.priv.mk
 
