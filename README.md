@@ -21,7 +21,7 @@ $ make prepare # Only needed at the first time
 $
 $ make help # If you need help
 $
-$ make # Or other directives depending on your need and the help info above
+$ make menuconfig && make # Or other directives depending on your need and the help info above
 $
 $ sudo -E make xxx_install # Some directives need sudo command and its -E option
 ````
