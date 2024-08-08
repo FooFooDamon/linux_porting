@@ -16,7 +16,10 @@ USER_HELP_PRINTS ?= ${DEFAULT_USER_HELP_PRINTS} \
     echo "  * ${MAKE} update_fdt_dir"; \
     echo "  * ${MAKE} fix_clangd_db";
 
-.PHONY: update_fdt_dir fix_clangd_db
+.PHONY: ${KERNEL_IMAGE} update_fdt_dir fix_clangd_db
+
+# NOTE: Explicitly specify the first target of u-boot.mk as the default target.
+${KERNEL_IMAGE}:
 
 update_fdt_dir:
 	krelease=$$(${MAKE} kernelrelease -C ${SRC_ROOT_DIR} ${MAKE_ARGS} -s | grep "^[0-9]\+"); \
