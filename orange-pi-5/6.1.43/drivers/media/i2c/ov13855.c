@@ -102,15 +102,24 @@ struct regval {
 	u8 val;
 };
 
+struct regval_by_lane {
+	u16 addr;
+	u8 val_1lane;
+	u8 val_2lane;
+	//u8 val_3lane;
+	u8 val_4lane;
+	u8 padding;
+};
+
 struct ov13855_mode {
 	u32 width;
 	u32 height;
 	struct v4l2_fract max_fps;
 	u32 hts_def;
 	u32 vts_def;
-	u32 exp_def;
+	u32 exp_def; // exposure default value
 	u32 link_freq_idx;
-	u32 bpp;
+	u32 bpp; // bits per pixel
 	const struct regval *reg_list;
 };
 
@@ -167,7 +176,6 @@ static const struct regval ov13855_global_regs[] = {
 	{0x0312, 0x11},
 	{0x3022, 0x01},
 	{0x3013, 0x32},
-	{0x3016, 0x72},
 	{0x301b, 0xF0},
 	{0x301f, 0xd0},
 	{0x3106, 0x15},
@@ -195,6 +203,7 @@ static const struct regval ov13855_global_regs[] = {
 	{0x3641, 0x70},
 	{0x3661, 0x80},
 	{0x3662, 0x12},
+	//{0x3663, 0x20},
 	{0x3664, 0x73},
 	{0x3665, 0xa7},
 	{0x366e, 0xff},
@@ -303,6 +312,7 @@ static const struct regval ov13855_global_regs[] = {
 	{0x481f, 0x30},
 	{0x4833, 0x10},
 	{0x4837, 0x0e},
+	//{0x4900, 0x0c},
 	{0x4902, 0x01},
 	{0x4d00, 0x03},
 	{0x4d01, 0xc9},
@@ -361,6 +371,13 @@ static const struct regval ov13855_global_regs[] = {
 	{REG_NULL, 0x00},
 };
 
+static const struct regval_by_lane ov13855_regs_by_lane[] = {
+	// addr, 1-,   2-,   4-lane
+	{0x3016, 0x12, 0x32, 0x72},
+	//{0x3017, 0x0e, 0x0c, 0x00}, // FIXME: Meanings of this register and its bits are uncertain.
+	{REG_NULL, 0x00, 0x00, 0x00},
+};
+
 #ifdef DEBUG
 /*
  * Xclk 24Mhz
@@ -376,7 +393,6 @@ static const struct regval ov13855_2112x1568_60fps_regs[] = {
 	{0x0305, 0x01},
 	{0x3022, 0x01},
 	{0x3013, 0x32},
-	{0x3016, 0x72},
 	{0x301b, 0xf0},
 	{0x301f, 0xd0},
 	{0x3106, 0x15},
@@ -491,7 +507,6 @@ static const struct regval ov13855_4224x3136_15fps_regs[] = {
 	{0x3022, 0x01},
 	{0x3012, 0x40},
 	{0x3013, 0x72},
-	{0x3016, 0x72},
 	{0x301b, 0xF0},
 	{0x301f, 0xd0},
 	{0x3106, 0x15},
@@ -716,7 +731,6 @@ static const struct regval ov13855_4224x3136_30fps_regs[] = {
 	{0x3022, 0x01},
 	{0x3012, 0x40},
 	{0x3013, 0x72},
-	{0x3016, 0x72},
 	{0x301b, 0xF0},
 	{0x301f, 0xd0},
 	{0x3106, 0x15},
@@ -1026,6 +1040,24 @@ static int ov13855_write_array(struct i2c_client *client,
 	return ret;
 }
 
+static int ov13855_write_array_by_lane(struct i2c_client *client,
+			       const struct regval_by_lane *regs_by_lane,
+			       int lane_count)
+{
+	u32 i;
+	int val_seq = (lane_count >= 3) ? 3 : lane_count;
+	int ret = 0;
+
+	for (i = 0; ret == 0 && regs_by_lane[i].addr != REG_NULL; i++)
+	{
+		ret = ov13855_write_reg(client, regs_by_lane[i].addr,
+					OV13855_REG_VALUE_08BIT,
+					*(&regs_by_lane[i].val_1lane + val_seq - 1));
+	}
+
+	return ret;
+}
+
 /* Read registers up to 4 at a time */
 static int ov13855_read_reg(struct i2c_client *client, u16 reg,
 			    unsigned int len, u32 *val)
@@ -1169,7 +1201,8 @@ static int ov13855_enum_mbus_code(struct v4l2_subdev *sd,
 {
 	if (code->index != 0)
 		return -EINVAL;
-	code->code = OV13855_MEDIA_BUS_FMT;
+
+	code->code = OV13855_MEDIA_BUS_FMT; // NOTE: OV13855 supports only one format.
 
 	return 0;
 }
@@ -1411,6 +1444,14 @@ static int ov13855_s_power(struct v4l2_subdev *sd, int on)
 		ret = ov13855_write_array(ov13855->client, ov13855_global_regs);
 		if (ret) {
 			v4l2_err(sd, "could not set init registers\n");
+			pm_runtime_put_noidle(&client->dev);
+			goto unlock_and_return;
+		}
+
+		ret = ov13855_write_array_by_lane(ov13855->client, ov13855_regs_by_lane,
+			ov13855->v4l2_mbus_conf.bus.mipi_csi2.num_data_lanes);
+		if (ret) {
+			v4l2_err(sd, "could not set by-lane registers\n");
 			pm_runtime_put_noidle(&client->dev);
 			goto unlock_and_return;
 		}
@@ -1667,14 +1708,16 @@ static int ov13855_parse_data_lanes(struct ov13855 *ov13855)
 
 		ov13855->v4l2_mbus_conf.type = V4L2_MBUS_CSI2_DPHY;
 
-		csi2_conf->num_data_lanes = ret;
 		for (i = 0; i < ret; ++i)
 		{
 			csi2_conf->data_lanes[i] = lanes[i];
 			ptr += sprintf(ptr, "%d ", csi2_conf->data_lanes[i]);
 		}
 		buf[sizeof(buf) - 1] = '\0';
-		dev_notice(dev, "found %d data lanes: <%s>\n", csi2_conf->num_data_lanes, buf);
+		dev_notice(dev, "Found %d data lanes: <%s>\n", ret, buf);
+		csi2_conf->num_data_lanes = (3 == ret || ret > 4) ? 4 : ret;
+		if (3 == ret || ret > 4)
+			dev_warn(dev, "Invalid lane count %d, adjusted it to %d\n", ret, csi2_conf->num_data_lanes);
 	}
 
 	return ret;
@@ -1941,6 +1984,11 @@ static int ov13855_probe(struct i2c_client *client,
 
 	sd = &ov13855->subdev;
 	v4l2_i2c_subdev_init(sd, client, &ov13855_subdev_ops);
+	facing[0] = (0 == strcmp(ov13855->module_facing, "back")) ? 'b' : 'f';
+	snprintf(sd->name, sizeof(sd->name), "m%02d_%s_%s@%s",
+		 ov13855->module_index, facing,
+		 OV13855_NAME, dev_name(sd->dev));
+
 	ret = ov13855_initialize_controls(ov13855);
 	if (ret)
 		goto err_destroy_mutex;
@@ -1953,10 +2001,6 @@ static int ov13855_probe(struct i2c_client *client,
 	if (ret)
 		goto err_power_off;
 
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-	sd->internal_ops = &ov13855_internal_ops;
-	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-#endif
 #if defined(CONFIG_MEDIA_CONTROLLER)
 	ov13855->pad.flags = MEDIA_PAD_FL_SOURCE;
 	sd->entity.function = MEDIA_ENT_F_CAM_SENSOR;
@@ -1965,10 +2009,12 @@ static int ov13855_probe(struct i2c_client *client,
 		goto err_power_off;
 #endif
 
-	facing[0] = (0 == strcmp(ov13855->module_facing, "back")) ? 'b' : 'f';
-	snprintf(sd->name, sizeof(sd->name), "m%02d_%s_%s %s",
-		 ov13855->module_index, facing,
-		 OV13855_NAME, dev_name(sd->dev));
+#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
+	sd->internal_ops = &ov13855_internal_ops;
+	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+#endif
+	// Like v4l2_async_register_subdev() with the exception that
+	// calling it will also parse firmware interfaces for remote references.
 	ret = v4l2_async_register_subdev_sensor(sd);
 	if (ret) {
 		dev_err(dev, "v4l2 async register subdev failed\n");
