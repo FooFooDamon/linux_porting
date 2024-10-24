@@ -38,10 +38,16 @@
 #define V4L2_CID_DIGITAL_GAIN		V4L2_CID_GAIN
 #endif
 
+//#define OV13855_LANES			4
+#define OV13855_BITS_PER_SAMPLE		10
+
+#define __LLINT(val)			val##LL
+#define LLINT(val)			__LLINT(val)
+
 #define OV13855_LINK_FREQ_540MHZ	540000000U
 #define OV13855_LINK_FREQ_270MHZ	270000000U
 /* pixel rate = link frequency * 2 * lanes / BITS_PER_SAMPLE */
-#define OV13855_PIXEL_RATE		(OV13855_LINK_FREQ_540MHZ * 2LL * 4LL / 10LL)
+#define OV13855_PIXEL_RATE(lane_cnt)	(OV13855_LINK_FREQ_540MHZ * 2LL * ((long long)(lane_cnt)) / LLINT(OV13855_BITS_PER_SAMPLE))
 #define OV13855_XVCLK_FREQ		24000000
 
 #define CHIP_ID				0x00d855
@@ -77,9 +83,6 @@
 #define OV13855_REG_VALUE_08BIT		1
 #define OV13855_REG_VALUE_16BIT		2
 #define OV13855_REG_VALUE_24BIT		3
-
-//#define OV13855_LANES			4
-#define OV13855_BITS_PER_SAMPLE		10
 
 #define OV13855_CHIP_REVISION_REG	0x302A
 
@@ -946,7 +949,7 @@ static const struct ov13855_mode supported_modes[] = {
 		.exp_def = 0x0800,
 		.hts_def = 0x0462,
 		.vts_def = 0x0c8e,
-		.bpp = 10,
+		.bpp = OV13855_BITS_PER_SAMPLE,
 		.reg_list = ov13855_4224x3136_30fps_regs,
 		.link_freq_idx = 0,
 	},
@@ -961,7 +964,7 @@ static const struct ov13855_mode supported_modes[] = {
 		.exp_def = 0x0400,
 		.hts_def = 0x0462,
 		.vts_def = 0x0c89,
-		.bpp = 10,
+		.bpp = OV13855_BITS_PER_SAMPLE,
 		.reg_list = ov13855_2112x1568_60fps_regs,
 		.link_freq_idx = 1,
 	},
@@ -975,7 +978,7 @@ static const struct ov13855_mode supported_modes[] = {
 		.exp_def = 0x0800,
 		.hts_def = 0x08c4,
 		.vts_def = 0x0c8e,
-		.bpp = 10,
+		.bpp = OV13855_BITS_PER_SAMPLE,
 		.reg_list = ov13855_4224x3136_15fps_regs,
 		.link_freq_idx = 0,
 	},
@@ -1032,27 +1035,37 @@ static int ov13855_write_array(struct i2c_client *client,
 	u32 i;
 	int ret = 0;
 
-	for (i = 0; ret == 0 && regs[i].addr != REG_NULL; i++)
+	for (i = 0; ret == 0 && regs[i].addr != REG_NULL; i++) {
 		ret = ov13855_write_reg(client, regs[i].addr,
 					OV13855_REG_VALUE_08BIT,
 					regs[i].val);
+	}
+
+	if (REG_NULL != regs[i].addr) {
+		dev_err(&client->dev, "Failed to set reg[0x%04x] with value[0x%02x], ret = %d\n",
+			regs[i].addr, regs[i].val, ret);
+	}
 
 	return ret;
 }
 
 static int ov13855_write_array_by_lane(struct i2c_client *client,
-			       const struct regval_by_lane *regs_by_lane,
+			       const struct regval_by_lane *regs,
 			       int lane_count)
 {
 	u32 i;
 	int val_seq = (lane_count >= 3) ? 3 : lane_count;
 	int ret = 0;
 
-	for (i = 0; ret == 0 && regs_by_lane[i].addr != REG_NULL; i++)
-	{
-		ret = ov13855_write_reg(client, regs_by_lane[i].addr,
+	for (i = 0; ret == 0 && regs[i].addr != REG_NULL; i++) {
+		ret = ov13855_write_reg(client, regs[i].addr,
 					OV13855_REG_VALUE_08BIT,
-					*(&regs_by_lane[i].val_1lane + val_seq - 1));
+					*(&regs[i].val_1lane + val_seq - 1));
+	}
+
+	if (REG_NULL != regs[i].addr) {
+		dev_err(&client->dev, "Failed to set reg[0x%04x] with value[0x%02x], ret = %d\n",
+			regs[i].addr, *(&regs[i].val_1lane + val_seq - 1), ret);
 	}
 
 	return ret;
@@ -1814,7 +1827,7 @@ static int ov13855_initialize_controls(struct ov13855 *ov13855)
 
 	ov13855->pixel_rate = v4l2_ctrl_new_std(handler, NULL,
 			V4L2_CID_PIXEL_RATE,
-			0, OV13855_PIXEL_RATE,
+			0, OV13855_PIXEL_RATE(lane_num),
 			1, dst_pixel_rate);
 
 	__v4l2_ctrl_s_ctrl(ov13855->link_freq,
