@@ -12,7 +12,6 @@
  * 2. fix some regs setting.
  * V0.0X01.0X04 fix power on sequence
  */
-//#define DEBUG
 #include <linux/clk.h>
 #include <linux/device.h>
 #include <linux/delay.h>
@@ -47,7 +46,8 @@
 #define OV13855_LINK_FREQ_540MHZ	540000000U
 #define OV13855_LINK_FREQ_270MHZ	270000000U
 /* pixel rate = link frequency * 2 * lanes / BITS_PER_SAMPLE */
-#define OV13855_PIXEL_RATE(lane_cnt)	(OV13855_LINK_FREQ_540MHZ * 2LL * ((long long)(lane_cnt)) / LLINT(OV13855_BITS_PER_SAMPLE))
+#define OV13855_PIXEL_RATE(lane_cnt, freq_idx)	\
+	(link_freq_items[freq_idx] * 2LL * ((long long)(lane_cnt)) / LLINT(OV13855_BITS_PER_SAMPLE))
 #define OV13855_XVCLK_FREQ		24000000
 
 #define CHIP_ID				0x00d855
@@ -162,11 +162,16 @@ struct ov13855 {
 
 #define to_ov13855(sd) container_of(sd, struct ov13855, subdev)
 
+#define OV13855_SW_RST_DELAY_MSECS		0
+//#define OV13855_SW_RST_DELAY_MSECS		2
+
 /*
  * Xclk 24Mhz
  */
 static const struct regval ov13855_global_regs[] = {
+#if OV13855_SW_RST_DELAY_MSECS <= 0
 	{0x0103, 0x01},
+#endif
 	{0x0300, 0x02},
 	{0x0301, 0x00},
 	{0x0302, 0x5a},
@@ -253,14 +258,6 @@ static const struct regval ov13855_global_regs[] = {
 	{0x3805, 0x9f},
 	{0x3806, 0x0c},
 	{0x3807, 0x57},
-	{0x3808, 0x10},
-	{0x3809, 0x80},
-	{0x380a, 0x0c},
-	{0x380b, 0x40},
-	{0x380c, 0x04},
-	{0x380d, 0x62},
-	{0x380e, 0x0c},
-	{0x380f, 0x8e},
 	{0x3811, 0x10},
 	{0x3813, 0x08},
 	{0x3814, 0x01},
@@ -381,7 +378,13 @@ static const struct regval_by_lane ov13855_regs_by_lane[] = {
 	{REG_NULL, 0x00, 0x00, 0x00},
 };
 
-#ifdef DEBUG
+#ifndef OV13855_MODE_COUNT
+#define OV13855_MODE_COUNT		1
+//#define OV13855_MODE_COUNT		2
+//#define OV13855_MODE_COUNT		3
+#endif
+
+#if OV13855_MODE_COUNT >= 2
 /*
  * Xclk 24Mhz
  * max_framerate 30fps
@@ -430,14 +433,6 @@ static const struct regval ov13855_2112x1568_60fps_regs[] = {
 	{0x3805, 0x9f},
 	{0x3806, 0x0c},
 	{0x3807, 0x4f},
-	{0x3808, 0x08},
-	{0x3809, 0x40},
-	{0x380a, 0x06},
-	{0x380b, 0x20},
-	{0x380c, 0x04},
-	{0x380d, 0x62},
-	{0x380e, 0x0c},
-	{0x380f, 0x89},
 	{0x3811, 0x08},
 	{0x3812, 0x00},
 	{0x3813, 0x02},
@@ -490,7 +485,9 @@ static const struct regval ov13855_2112x1568_60fps_regs[] = {
 
 	{REG_NULL, 0x00},
 };
+#endif // #if OV13855_MODE_COUNT >= 2
 
+#if OV13855_MODE_COUNT >= 3
 /*
  * Xclk 24Mhz
  * max_framerate 15fps
@@ -585,14 +582,6 @@ static const struct regval ov13855_4224x3136_15fps_regs[] = {
 	{0x3805, 0x9f},
 	{0x3806, 0x0c},
 	{0x3807, 0x57},
-	{0x3808, 0x10},
-	{0x3809, 0x80},
-	{0x380a, 0x0c},
-	{0x380b, 0x40},
-	{0x380c, 0x04},
-	{0x380d, 0x62},
-	{0x380e, 0x0c},
-	{0x380f, 0x8e},
 	{0x3811, 0x10},
 	{0x3813, 0x08},
 	{0x3814, 0x01},
@@ -706,14 +695,12 @@ static const struct regval ov13855_4224x3136_15fps_regs[] = {
 	{0x5408, 0x4a},
 	{0x0100, 0x01},
 	{0x0100, 0x00},
-	{0x380c, 0x08},
-	{0x380d, 0xc4},
 	{0x0303, 0x01},
 	{0x4837, 0x1c},
 	//{0x0100, 0x01},
 	{REG_NULL, 0x00},
 };
-#endif
+#endif // #if OV13855_MODE_COUNT >= 3
 
 /*
  * Xclk 24Mhz
@@ -809,14 +796,6 @@ static const struct regval ov13855_4224x3136_30fps_regs[] = {
 	{0x3805, 0x9f},
 	{0x3806, 0x0c},
 	{0x3807, 0x57},
-	{0x3808, 0x10},
-	{0x3809, 0x80},
-	{0x380a, 0x0c},
-	{0x380b, 0x40},
-	{0x380c, 0x04},
-	{0x380d, 0x62},
-	{0x380e, 0x0c},
-	{0x380f, 0x8e},
 	{0x3811, 0x10},
 	{0x3813, 0x08},
 	{0x3814, 0x01},
@@ -930,8 +909,6 @@ static const struct regval ov13855_4224x3136_30fps_regs[] = {
 	{0x5408, 0x4a},
 	{0x0100, 0x01},
 	{0x0100, 0x00},
-	{0x380c, 0x04},
-	{0x380d, 0x62},
 	{0x0303, 0x00},
 	{0x4837, 0x0e},
 	//{0x0100, 0x01},
@@ -944,16 +921,16 @@ static const struct ov13855_mode supported_modes[] = {
 		.height = 3136,
 		.max_fps = {
 			.numerator = 10000,
-			.denominator = 300000,
+			.denominator = 300000, // 150000,
 		},
-		.exp_def = 0x0800,
-		.hts_def = 0x0462,
+		.exp_def = 0x0200,
+		.hts_def = 0x08c4,
 		.vts_def = 0x0c8e,
 		.bpp = OV13855_BITS_PER_SAMPLE,
 		.reg_list = ov13855_4224x3136_30fps_regs,
 		.link_freq_idx = 0,
 	},
-#ifdef DEBUG
+#if OV13855_MODE_COUNT >= 2
 	{
 		.width = 2112,
 		.height = 1568,
@@ -968,6 +945,8 @@ static const struct ov13855_mode supported_modes[] = {
 		.reg_list = ov13855_2112x1568_60fps_regs,
 		.link_freq_idx = 1,
 	},
+#endif
+#if OV13855_MODE_COUNT >= 3
 	{
 		.width = 4224,
 		.height = 3136,
@@ -1050,8 +1029,8 @@ static int ov13855_write_array(struct i2c_client *client,
 }
 
 static int ov13855_write_array_by_lane(struct i2c_client *client,
-			       const struct regval_by_lane *regs,
-			       int lane_count)
+					const struct regval_by_lane *regs,
+					int lane_count)
 {
 	u32 i;
 	int val_seq = (lane_count >= 3) ? 3 : lane_count;
@@ -1066,6 +1045,40 @@ static int ov13855_write_array_by_lane(struct i2c_client *client,
 	if (REG_NULL != regs[i].addr) {
 		dev_err(&client->dev, "Failed to set reg[0x%04x] with value[0x%02x], ret = %d\n",
 			regs[i].addr, *(&regs[i].val_1lane + val_seq - 1), ret);
+	}
+
+	return ret;
+}
+
+static int ov13855_write_mode_related_regs(struct i2c_client *client,
+					   const struct ov13855_mode *mode)
+{
+	struct
+	{
+		u16 addr;
+		u16 val;
+	} regs[] = {
+		{0x3808, mode->width},
+		{0x380a, mode->height},
+		{0x380c, mode->hts_def},
+		{0x380e, mode->vts_def},
+
+		{REG_NULL, 0x00}
+	};
+	u32 i;
+	int ret = 0;
+
+	for (i = 0; ret == 0 && regs[i].addr != REG_NULL; i++) {
+		ret = ov13855_write_reg(client, regs[i].addr,
+					OV13855_REG_VALUE_16BIT,
+					regs[i].val);
+	}
+
+	if (REG_NULL != regs[i].addr) {
+		dev_err(&client->dev, "Failed to set reg[0x%04x] to 0x%02x,"
+			" reg[0x%04x] to 0x%02x, ret = %d\n",
+			regs[i].addr, (regs[i].val >> 8),
+			regs[i].addr + 1, (regs[i].val & 0x00ff), ret);
 	}
 
 	return ret;
@@ -1371,6 +1384,15 @@ static int __ov13855_start_stream(struct ov13855 *ov13855)
 	if (ret)
 		return ret;
 
+	ret = ov13855_write_mode_related_regs(ov13855->client, ov13855->cur_mode);
+	if (ret)
+		return ret;
+
+	ret = ov13855_write_array_by_lane(ov13855->client, ov13855_regs_by_lane,
+					  ov13855->v4l2_mbus_conf.bus.mipi_csi2.num_data_lanes);
+	if (ret)
+		return ret;
+
 	/* In case these controls are set before streaming */
 	mutex_unlock(&ov13855->mutex);
 	ret = v4l2_ctrl_handler_setup(&ov13855->ctrl_handler);
@@ -1454,9 +1476,26 @@ static int ov13855_s_power(struct v4l2_subdev *sd, int on)
 			goto unlock_and_return;
 		}
 
+#if OV13855_SW_RST_DELAY_MSECS > 0
+		ret = ov13855_write_reg(client, 0x0103, OV13855_REG_VALUE_08BIT, 0x01);
+		if (ret) {
+			v4l2_err(sd, "failed to do software reset, ret = %d\n", ret);
+			pm_runtime_put_noidle(&client->dev);
+			goto unlock_and_return;
+		}
+		msleep(2);
+#endif
+
 		ret = ov13855_write_array(ov13855->client, ov13855_global_regs);
 		if (ret) {
 			v4l2_err(sd, "could not set init registers\n");
+			pm_runtime_put_noidle(&client->dev);
+			goto unlock_and_return;
+		}
+
+		ret = ov13855_write_mode_related_regs(ov13855->client, ov13855->cur_mode);
+		if (ret) {
+			v4l2_err(sd, "could not set mode-related registers\n");
 			pm_runtime_put_noidle(&client->dev);
 			goto unlock_and_return;
 		}
@@ -1827,7 +1866,7 @@ static int ov13855_initialize_controls(struct ov13855 *ov13855)
 
 	ov13855->pixel_rate = v4l2_ctrl_new_std(handler, NULL,
 			V4L2_CID_PIXEL_RATE,
-			0, OV13855_PIXEL_RATE(lane_num),
+			0, OV13855_PIXEL_RATE(lane_num, mode->link_freq_idx),
 			1, dst_pixel_rate);
 
 	__v4l2_ctrl_s_ctrl(ov13855->link_freq,
