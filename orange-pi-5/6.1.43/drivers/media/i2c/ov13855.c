@@ -43,8 +43,10 @@
 #define __LLINT(val)			val##LL
 #define LLINT(val)			__LLINT(val)
 
-#define OV13855_LINK_FREQ_540MHZ	540000000U
 #define OV13855_LINK_FREQ_270MHZ	270000000U
+#define OV13855_LINK_FREQ_540MHZ	540000000U
+#define OV13855_LINK_FREQ_1080MHZ	1080000000U
+
 /* pixel rate = link frequency * 2 * lanes / BITS_PER_SAMPLE */
 #define OV13855_PIXEL_RATE(lane_cnt, freq_idx)	\
 	(link_freq_items[freq_idx] * 2LL * ((long long)(lane_cnt)) / LLINT(OV13855_BITS_PER_SAMPLE))
@@ -373,8 +375,19 @@ static const struct regval ov13855_global_regs[] = {
 
 static const struct regval_by_lane ov13855_regs_by_lane[] = {
 	// addr, 1-,   2-,   4-lane
-	{0x3016, 0x12, 0x32, 0x72},
-	//{0x3017, 0x0e, 0x0c, 0x00}, // FIXME: Meanings of this register and its bits are uncertain.
+	{0x0301, 0x01, 0x00, 0x00}, // PLL1 multiplier (high byte)
+	{0x0302, 0x68, 0xb4, 0x5a}, // PLL1 multiplier (low byte)
+	{0x3016, 0x12, 0x32, 0x72}, // [7:5]: enabled lane count = N + 1
+	{0x3017, 0x0e, 0x0c, 0x00}, // [3:0]: disable lane 3, 2, 1 and/or 0 respectively
+	//{0x3020, 0x93, 0x93, 0x9b}, // FIXME: [3]: pclk_div = /1 or /2 ??
+#if 0 // for test only
+	{0x3814, 0x01, 0x00, 0x01}, // horizontal increase number at odd pixel
+	{0x3815, 0x01, 0x00, 0x01}, // horizontal increase number at even pixel
+	{0x3816, 0x01, 0x01, 0x01}, // vertical increase number at odd row
+	{0x3817, 0x01, 0x01, 0x01}, // vertical increase number at even row
+#endif
+	{0x4837, 0x04, 0x07, 0x0e}, // pclk_period
+	//{0x5081, 0x41, 0x41, 0x41}, // [6]: window cut enable
 	{REG_NULL, 0x00, 0x00, 0x00},
 };
 
@@ -532,7 +545,7 @@ static const struct regval ov13855_4224x3136_15fps_regs[] = {
 	{0x3624, 0x1c},
 	{0x3640, 0x10},
 	{0x3641, 0x70},
-	{0x3660, 0x04},
+	{0x3660, 0x14}, // [4]: SCLK comes from PLL2; [2]: SOF comes from ISPFC
 	{0x3661, 0x80},
 	{0x3662, 0x12},
 	{0x3664, 0x73},
@@ -746,7 +759,7 @@ static const struct regval ov13855_4224x3136_30fps_regs[] = {
 	{0x3624, 0x1c},
 	{0x3640, 0x10},
 	{0x3641, 0x70},
-	{0x3660, 0x04},
+	{0x3660, 0x14}, // [4]: SCLK comes from PLL2; [2]: SOF comes from ISPFC
 	{0x3661, 0x80},
 	{0x3662, 0x12},
 	{0x3664, 0x73},
@@ -921,14 +934,14 @@ static const struct ov13855_mode supported_modes[] = {
 		.height = 3136,
 		.max_fps = {
 			.numerator = 10000,
-			.denominator = 300000, // 150000,
+			.denominator = 300000,
 		},
-		.exp_def = 0x0200,
-		.hts_def = 0x08c4,
+		.exp_def = 0x0800,
+		.hts_def = 0x0462,
 		.vts_def = 0x0c8e,
 		.bpp = OV13855_BITS_PER_SAMPLE,
 		.reg_list = ov13855_4224x3136_30fps_regs,
-		.link_freq_idx = 0,
+		.link_freq_idx = 2,
 	},
 #if OV13855_MODE_COUNT >= 2
 	{
@@ -943,7 +956,7 @@ static const struct ov13855_mode supported_modes[] = {
 		.vts_def = 0x0c89,
 		.bpp = OV13855_BITS_PER_SAMPLE,
 		.reg_list = ov13855_2112x1568_60fps_regs,
-		.link_freq_idx = 1,
+		.link_freq_idx = 0,
 	},
 #endif
 #if OV13855_MODE_COUNT >= 3
@@ -959,14 +972,15 @@ static const struct ov13855_mode supported_modes[] = {
 		.vts_def = 0x0c8e,
 		.bpp = OV13855_BITS_PER_SAMPLE,
 		.reg_list = ov13855_4224x3136_15fps_regs,
-		.link_freq_idx = 0,
+		.link_freq_idx = 1,
 	},
 #endif
 };
 
 static const s64 link_freq_items[] = {
-	OV13855_LINK_FREQ_540MHZ,
 	OV13855_LINK_FREQ_270MHZ,
+	OV13855_LINK_FREQ_540MHZ,
+	OV13855_LINK_FREQ_1080MHZ,
 };
 
 static const char * const ov13855_test_pattern_menu[] = {
