@@ -46,6 +46,7 @@
 #define OV13855_LINK_FREQ_270MHZ	270000000U
 #define OV13855_LINK_FREQ_540MHZ	540000000U
 #define OV13855_LINK_FREQ_1080MHZ	1080000000U
+#define OV13855_LINK_FREQ_2160MHZ	2160000000U
 
 /* pixel rate = link frequency * 2 * lanes / BITS_PER_SAMPLE */
 #define OV13855_PIXEL_RATE(lane_cnt, freq_idx)	\
@@ -375,8 +376,8 @@ static const struct regval ov13855_global_regs[] = {
 
 static const struct regval_by_lane ov13855_regs_by_lane[] = {
 	// addr, 1-,   2-,   4-lane
-	{0x0301, 0x01, 0x00, 0x00}, // PLL1 multiplier (high byte)
-	{0x0302, 0x68, 0xb4, 0x5a}, // PLL1 multiplier (low byte)
+	{0x0301, /*0x01*/0x00, 0x00, 0x00}, // PLL1 multiplier (high byte)
+	{0x0302, /*0x68*/0xb4, 0xb4, 0x5a}, // PLL1 multiplier (low byte)
 	{0x3016, 0x12, 0x32, 0x72}, // [7:5]: enabled lane count = N + 1
 	{0x3017, 0x0e, 0x0c, 0x00}, // [3:0]: disable lane 3, 2, 1 and/or 0 respectively
 	//{0x3020, 0x93, 0x93, 0x9b}, // FIXME: [3]: pclk_div = /1 or /2 ??
@@ -407,7 +408,7 @@ static const struct regval ov13855_2112x1568_60fps_regs[] = {
 	{0x0300, 0x02},
 	{0x0301, 0x00},
 	{0x0302, 0x5a},
-	{0x0303, 0x01},
+	{0x0303, 0x01/*0x00*/}, // [1:0]: pll1_divpx = N + 1
 	{0x0304, 0x00},
 	{0x0305, 0x01},
 	{0x3022, 0x01},
@@ -421,6 +422,7 @@ static const struct regval ov13855_2112x1568_60fps_regs[] = {
 	{0x3502, 0x00},
 	{0x3622, 0x30},
 	{0x3624, 0x1c},
+	//{0x3660, 0x14}, // [4]: SCLK comes from PLL2; [2]: SOF comes from ISPFC
 	{0x3662, 0x10},
 	{0x3709, 0x5f},
 	{0x3714, 0x28},
@@ -453,7 +455,7 @@ static const struct regval ov13855_2112x1568_60fps_regs[] = {
 	{0x3815, 0x01},
 	{0x3816, 0x03},
 	{0x3817, 0x01},
-	{0x3820, 0xab},
+	{0x3820, 0xab}, // [1]: enable hbin2; [0]: enable vbinf
 	{0x3821, 0x00},
 	{0x3826, 0x04},
 	{0x3827, 0x90},
@@ -937,10 +939,11 @@ static const struct ov13855_mode supported_modes[] = {
 			.denominator = 300000,
 		},
 		.exp_def = 0x0800,
-		.hts_def = 0x0462,
-		.vts_def = 0x0c8e,
+		.hts_def = 0x0462, // 0x1194,
+		.vts_def = 0x0c8e, // 0x0c80,
 		.bpp = OV13855_BITS_PER_SAMPLE,
 		.reg_list = ov13855_4224x3136_30fps_regs,
+		// NOTE: Decided by reg{0x0301, 0x0302} in ov13855_regs_by_lane and lane count.
 		.link_freq_idx = 2,
 	},
 #if OV13855_MODE_COUNT >= 2
@@ -977,10 +980,12 @@ static const struct ov13855_mode supported_modes[] = {
 #endif
 };
 
+// link_freq >= width * height * bits_per_sample * fps / 2 / lane_count
 static const s64 link_freq_items[] = {
 	OV13855_LINK_FREQ_270MHZ,
 	OV13855_LINK_FREQ_540MHZ,
 	OV13855_LINK_FREQ_1080MHZ,
+	OV13855_LINK_FREQ_2160MHZ,
 };
 
 static const char * const ov13855_test_pattern_menu[] = {
