@@ -2120,6 +2120,56 @@ static int samsung_dcphy_rx_config_common(struct csi2_dphy *dphy,
 	return 0;
 }
 
+static void samsung_dcphy_print_regs(struct csi2_dphy *dphy,
+				     struct csi2_sensor *sensor)
+{
+	struct device *dev = dphy->samsung_phy->dev;
+	struct regmap *regmap = dphy->samsung_phy->regmap;
+	u16 offset_bases[] = { 0x0B00, 0x0C00, 0x0D00, 0x0E00, 0x0F00 };
+	u8 offsets_low_bytes[] = {
+		0x00, 0x04, // GNR_CON[0-1]
+		0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C, 0x20, 0x24, // ANA_CON[0-7]
+		0x30, 0x34, // TIME_CON[0-1]
+		0x38, // DATA_CON0
+		0x40, 0x44, 0x48, 0x4C, 0x50, // DESKEW_CON[0-4]
+		0x60, 0x64, 0x68 // CRC_CON[0-2]
+	};
+	struct
+	{
+		unsigned int reg;
+		unsigned int val;
+	} reg_pairs[sizeof(offset_bases) / sizeof(offset_bases[0])];
+	u8 i;
+
+	dev_notice(dev, "%s(): clk_lane{ <address offset>, <value> }, lane0{ ... },"
+		" lane1{ ... }, lane2{ ... }, lane3{ ... },\n", __func__);
+
+	for (i = 0; i < sizeof(offsets_low_bytes)/ sizeof(offsets_low_bytes[0]); ++i) {
+		u8 offset_low = offsets_low_bytes[i];
+		u8 j;
+		int ret;
+
+		for (j = 0; j < sizeof(reg_pairs) / sizeof(reg_pairs[0]); ++j) {
+			reg_pairs[j].reg = offset_bases[j] | offset_low;
+			ret = regmap_read(regmap, reg_pairs[j].reg, &reg_pairs[j].val);
+
+			if (ret < 0) {
+				dev_warn(dev, "%s(): Failed to get value of reg[0x%04X], ret = %d\n",
+					__func__, reg_pairs[j].reg, ret);
+			}
+		}
+
+		dev_notice(dev, "%s(): { 0x%04X, 0x%08X }, { 0x%04X, 0x%08X },"
+			" { 0x%04X, 0x%08X }, { 0x%04X, 0x%08X }, { 0x%04X, 0x%08X },\n",
+			__func__,
+			reg_pairs[0].reg, reg_pairs[0].val,
+			reg_pairs[1].reg, reg_pairs[1].val,
+			reg_pairs[2].reg, reg_pairs[2].val,
+			reg_pairs[3].reg, reg_pairs[3].val,
+			reg_pairs[4].reg, reg_pairs[4].val);
+	}
+}
+
 static int samsung_dcphy_rx_lane_enable(struct csi2_dphy *dphy,
 					  struct csi2_sensor *sensor)
 {
@@ -2211,7 +2261,10 @@ static int samsung_dcphy_rx_stream_on(struct csi2_dphy *dphy,
 	ret = samsung_dcphy_rx_config_common(dphy, sensor);
 	if (ret)
 		goto out_streamon;
+
 	samsung_dcphy_rx_config_settle(dphy, sensor);
+
+	samsung_dcphy_print_regs(dphy, sensor);
 
 	ret = samsung_dcphy_rx_lane_enable(dphy, sensor);
 	if (ret)
@@ -2224,6 +2277,7 @@ static int samsung_dcphy_rx_stream_on(struct csi2_dphy *dphy,
 	mutex_unlock(&samsung->mutex);
 
 	return 0;
+
 out_streamon:
 	if (samsung->s_phy_rst)
 		reset_control_deassert(samsung->s_phy_rst);
