@@ -38,10 +38,21 @@
 #define V4L2_CID_DIGITAL_GAIN		V4L2_CID_GAIN
 #endif
 
-#define OV13855_LINK_FREQ_540MHZ	540000000U
+//#define OV13855_LANES			4
+#define OV13855_LANES			2
+#define OV13855_BITS_PER_SAMPLE		10
+
 #define OV13855_LINK_FREQ_270MHZ	270000000U
+#define OV13855_LINK_FREQ_540MHZ	540000000U
+#define OV13855_LINK_FREQ_1080MHZ	1080000000U
 /* pixel rate = link frequency * 2 * lanes / BITS_PER_SAMPLE */
+#if OV13855_LANES == 4
 #define OV13855_PIXEL_RATE		(OV13855_LINK_FREQ_540MHZ * 2LL * 4LL / 10LL)
+#elif OV13855_LANES == 2
+#define OV13855_PIXEL_RATE		(OV13855_LINK_FREQ_1080MHZ * 2LL * 4LL / 10LL)
+#else
+#error Only 4-lane and 2-lane modes are supported!
+#endif
 #define OV13855_XVCLK_FREQ		24000000
 
 #define CHIP_ID				0x00d855
@@ -77,9 +88,6 @@
 #define OV13855_REG_VALUE_08BIT		1
 #define OV13855_REG_VALUE_16BIT		2
 #define OV13855_REG_VALUE_24BIT		3
-
-#define OV13855_LANES			4
-#define OV13855_BITS_PER_SAMPLE		10
 
 #define OV13855_CHIP_REVISION_REG	0x302A
 
@@ -704,7 +712,11 @@ static const struct regval ov13855_4224x3136_15fps_regs[] = {
 static const struct regval ov13855_4224x3136_30fps_regs[] = {
 	{0x0300, 0x02},
 	{0x0301, 0x00},
+#if OV13855_LANES == 4
 	{0x0302, 0x5a},
+#else
+	{0x0302, 0xb4},
+#endif
 	{0x0303, 0x00},
 	{0x0304, 0x00},
 	{0x0305, 0x01},
@@ -715,7 +727,11 @@ static const struct regval ov13855_4224x3136_30fps_regs[] = {
 	{0x3022, 0x01},
 	{0x3012, 0x40},
 	{0x3013, 0x72},
+#if OV13855_LANES == 4
 	{0x3016, 0x72},
+#else
+	{0x3016, 0x32},
+#endif
 	{0x301b, 0xF0},
 	{0x301f, 0xd0},
 	{0x3106, 0x15},
@@ -854,7 +870,11 @@ static const struct regval ov13855_4224x3136_30fps_regs[] = {
 	{0x480c, 0x12},
 	{0x481f, 0x30},
 	{0x4833, 0x10},
+#if OV13855_LANES == 4
 	{0x4837, 0x0e},
+#else
+	{0x4837, 0x07},
+#endif
 	{0x4902, 0x01},
 	{0x4d00, 0x03},
 	{0x4d01, 0xc9},
@@ -933,7 +953,11 @@ static const struct ov13855_mode supported_modes[] = {
 		.vts_def = 0x0c8e,
 		.bpp = 10,
 		.reg_list = ov13855_4224x3136_30fps_regs,
-		.link_freq_idx = 0,
+#if OV13855_LANES == 4
+		.link_freq_idx = 1,
+#else
+		.link_freq_idx = 2,
+#endif
 	},
 #ifdef DEBUG
 	{
@@ -948,7 +972,7 @@ static const struct ov13855_mode supported_modes[] = {
 		.vts_def = 0x0c89,
 		.bpp = 10,
 		.reg_list = ov13855_2112x1568_60fps_regs,
-		.link_freq_idx = 1,
+		.link_freq_idx = 0,
 	},
 	{
 		.width = 4224,
@@ -962,14 +986,15 @@ static const struct ov13855_mode supported_modes[] = {
 		.vts_def = 0x0c8e,
 		.bpp = 10,
 		.reg_list = ov13855_4224x3136_15fps_regs,
-		.link_freq_idx = 0,
+		.link_freq_idx = 1,
 	},
 #endif
 };
 
 static const s64 link_freq_items[] = {
-	OV13855_LINK_FREQ_540MHZ,
 	OV13855_LINK_FREQ_270MHZ,
+	OV13855_LINK_FREQ_540MHZ,
+	OV13855_LINK_FREQ_1080MHZ,
 };
 
 static const char * const ov13855_test_pattern_menu[] = {
@@ -1727,7 +1752,7 @@ static int ov13855_initialize_controls(struct ov13855 *ov13855)
 
 	ov13855->link_freq = v4l2_ctrl_new_int_menu(handler, NULL,
 			V4L2_CID_LINK_FREQ,
-			1, 0, link_freq_items);
+			ARRAY_SIZE(link_freq_items) - 1, 0, link_freq_items);
 
 	dst_pixel_rate = (u32)link_freq_items[mode->link_freq_idx] / mode->bpp * 2 * lane_num;
 
