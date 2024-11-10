@@ -49,7 +49,7 @@
 #if OV13855_LANES == 4
 #define OV13855_PIXEL_RATE		(OV13855_LINK_FREQ_540MHZ * 2LL * 4LL / 10LL)
 #elif OV13855_LANES == 2
-#define OV13855_PIXEL_RATE		(OV13855_LINK_FREQ_1080MHZ * 2LL * 4LL / 10LL)
+#define OV13855_PIXEL_RATE		(OV13855_LINK_FREQ_1080MHZ * 2LL * 2LL / 10LL)
 #else
 #error Only 4-lane and 2-lane modes are supported!
 #endif
@@ -757,7 +757,7 @@ static const struct regval ov13855_4224x3136_30fps_regs[] = {
 	{0x3624, 0x1c},
 	{0x3640, 0x10},
 	{0x3641, 0x70},
-	{0x3660, 0x04},
+	{0x3660, 0x14}, // [4]: SCLK comes from PLL2; [2]: SOF comes from ISPFC
 	{0x3661, 0x80},
 	{0x3662, 0x12},
 	{0x3664, 0x73},
@@ -870,11 +870,7 @@ static const struct regval ov13855_4224x3136_30fps_regs[] = {
 	{0x480c, 0x12},
 	{0x481f, 0x30},
 	{0x4833, 0x10},
-#if OV13855_LANES == 4
 	{0x4837, 0x0e},
-#else
-	{0x4837, 0x07},
-#endif
 	{0x4902, 0x01},
 	{0x4d00, 0x03},
 	{0x4d01, 0xc9},
@@ -935,7 +931,11 @@ static const struct regval ov13855_4224x3136_30fps_regs[] = {
 	{0x380c, 0x04},
 	{0x380d, 0x62},
 	{0x0303, 0x00},
+#if OV13855_LANES == 4
 	{0x4837, 0x0e},
+#else
+	{0x4837, 0x07},
+#endif
 	//{0x0100, 0x01},
 	{REG_NULL, 0x00},
 };
