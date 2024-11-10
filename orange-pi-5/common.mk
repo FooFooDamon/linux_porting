@@ -9,7 +9,6 @@ CUSTOM_FILES += arch/${ARCH}/boot/dts/rockchip/Makefile \
     arch/${ARCH}/boot/dts/rockchip/rk3588s.dtsi \
     arch/${ARCH}/boot/dts/rockchip/rk3588s-orangepi-5-camera2.dtsi \
     arch/${ARCH}/boot/dts/rockchip/overlay/Makefile \
-    arch/${ARCH}/boot/dts/rockchip/overlay/rk3588-ov13855-c2.dts \
     drivers/media/i2c/ov13855.c
 
 USER_HELP_PRINTS ?= ${DEFAULT_USER_HELP_PRINTS} \
