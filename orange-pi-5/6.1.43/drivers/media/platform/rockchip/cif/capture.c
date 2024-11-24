@@ -695,21 +695,22 @@ struct rkcif_rx_buffer *to_cif_rx_buf(struct rkisp_rx_buf *dbufs)
 
 static struct v4l2_subdev *get_remote_sensor(struct rkcif_stream *stream, u16 *index)
 {
+	struct video_device *vdev = &stream->vnode.vdev;
 	struct media_pad *local, *remote;
 	struct media_entity *sensor_me;
 	struct v4l2_subdev *sub = NULL;
 
-	local = &stream->vnode.vdev.entity.pads[0];
+	local = &vdev->entity.pads[STREAM_PAD_SINK];
 	if (!local) {
-		v4l2_err(&stream->cifdev->v4l2_dev,
-			 "%s: video pad[0] is null\n", __func__);
+		v4l2_err(&stream->cifdev->v4l2_dev, "%s: video pad[%d] is null\n",
+			__func__,STREAM_PAD_SINK);
 		return NULL;
 	}
 
 	remote = media_pad_remote_pad_first(local);
 	if (!remote) {
-		v4l2_err(&stream->cifdev->v4l2_dev,
-			 "%s: remote pad is null\n", __func__);
+		v4l2_err(&stream->cifdev->v4l2_dev, "%s: remote pad of video[%s]#pad[%d] is null\n",
+			__func__, vdev->name, STREAM_PAD_SINK);
 		return NULL;
 	}
 
@@ -6402,7 +6403,7 @@ int rkcif_set_fmt(struct rkcif_stream *stream,
 		stream->cif_fmt_in = cif_fmt_in;
 	} else {
 		v4l2_err(&stream->cifdev->v4l2_dev,
-			 "terminal subdev does not exist\n");
+			 "%s(): terminal subdev does not exist\n", __func__);
 		return -EINVAL;
 	}
 
@@ -6858,7 +6859,7 @@ static int rkcif_enum_fmt_vid_cap_mplane(struct file *file, void *priv,
 		stream->cif_fmt_in = cif_fmt_in;
 	} else {
 		v4l2_err(&stream->cifdev->v4l2_dev,
-			 "terminal subdev does not exist\n");
+			 "%s(): terminal subdev does not exist\n", __func__);
 		return -EINVAL;
 	}
 
@@ -9864,8 +9865,14 @@ void rkcif_set_default_fmt(struct rkcif_device *cif_dev)
 
 	stream_num = RKCIF_MAX_STREAM_MIPI;
 
-	if (!cif_dev->terminal_sensor.sd)
+	if (!cif_dev->terminal_sensor.sd) {
+		v4l2_warn(&cif_dev->v4l2_dev, "%s(): null terminal_sensor.sd, fetching it now ...", __func__);
 		rkcif_update_sensor_info(&cif_dev->stream[0]);
+		if (cif_dev->terminal_sensor.sd)
+			v4l2_info(&cif_dev->v4l2_dev, "%s(): NOTE: fetched terminal_sensor.sd successfully", __func__);
+		else
+			v4l2_err(&cif_dev->v4l2_dev, "%s(): *** failed to fetch terminal_sensor.sd", __func__);
+	}
 
 	if (cif_dev->terminal_sensor.sd) {
 		for (i = 0; i < stream_num; i++) {

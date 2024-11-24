@@ -143,8 +143,14 @@ static int rkcif_scale_set_fmt(struct rkcif_scale_vdev *scale_vdev,
 	u32 height = 480;
 	int ret = 0;
 
-	if (!cif_dev->terminal_sensor.sd)
+	if (!cif_dev->terminal_sensor.sd) {
+		v4l2_warn(&cif_dev->v4l2_dev, "%s(): null terminal_sensor.sd, fetching it now ...", __func__);
 		rkcif_update_sensor_info(&cif_dev->stream[0]);
+		if (cif_dev->terminal_sensor.sd)
+			v4l2_info(&cif_dev->v4l2_dev, "%s(): fetched terminal_sensor.sd successfully", __func__);
+		else
+			v4l2_err(&cif_dev->v4l2_dev, "%s(): failed to fetch terminal_sensor.sd", __func__);
+	}
 
 	if (cif_dev->terminal_sensor.sd) {
 		fmt_src.which = V4L2_SUBDEV_FORMAT_ACTIVE;

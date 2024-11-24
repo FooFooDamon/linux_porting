@@ -60,8 +60,14 @@ static void sditf_get_hdr_mode(struct sditf_priv *priv)
 	struct rkmodule_hdr_cfg hdr_cfg;
 	int ret = 0;
 
-	if (!cif_dev->terminal_sensor.sd)
+	if (!cif_dev->terminal_sensor.sd) {
+		v4l2_warn(&cif_dev->v4l2_dev, "%s(): null terminal_sensor.sd, fetching it now ...", __func__);
 		rkcif_update_sensor_info(&cif_dev->stream[0]);
+		if (cif_dev->terminal_sensor.sd)
+			v4l2_info(&cif_dev->v4l2_dev, "%s(): fetched terminal_sensor.sd successfully", __func__);
+		else
+			v4l2_err(&cif_dev->v4l2_dev, "%s(): failed to fetch terminal_sensor.sd", __func__);
+	}
 
 	if (cif_dev->terminal_sensor.sd) {
 		ret = v4l2_subdev_call(cif_dev->terminal_sensor.sd,
@@ -84,8 +90,14 @@ static int sditf_g_frame_interval(struct v4l2_subdev *sd,
 	struct rkcif_device *cif_dev = priv->cif_dev;
 	struct v4l2_subdev *sensor_sd;
 
-	if (!cif_dev->terminal_sensor.sd)
+	if (!cif_dev->terminal_sensor.sd) {
+		v4l2_warn(&cif_dev->v4l2_dev, "%s(): null terminal_sensor.sd, fetching it now ...", __func__);
 		rkcif_update_sensor_info(&cif_dev->stream[0]);
+		if (cif_dev->terminal_sensor.sd)
+			v4l2_info(&cif_dev->v4l2_dev, "%s(): fetched terminal_sensor.sd successfully", __func__);
+		else
+			v4l2_err(&cif_dev->v4l2_dev, "%s(): failed to fetch terminal_sensor.sd", __func__);
+	}
 
 	if (cif_dev->terminal_sensor.sd) {
 		sensor_sd = cif_dev->terminal_sensor.sd;
@@ -102,8 +114,14 @@ static int sditf_g_mbus_config(struct v4l2_subdev *sd, unsigned int pad_id,
 	struct rkcif_device *cif_dev = priv->cif_dev;
 	struct v4l2_subdev *sensor_sd;
 
-	if (!cif_dev->active_sensor)
+	if (!cif_dev->active_sensor) {
+		v4l2_warn(&cif_dev->v4l2_dev, "%s(): null terminal_sensor.sd, fetching it now ...", __func__);
 		rkcif_update_sensor_info(&cif_dev->stream[0]);
+		if (cif_dev->terminal_sensor.sd)
+			v4l2_info(&cif_dev->v4l2_dev, "%s(): fetched terminal_sensor.sd successfully", __func__);
+		else
+			v4l2_err(&cif_dev->v4l2_dev, "%s(): failed to fetch terminal_sensor.sd", __func__);
+	}
 
 	if (cif_dev->active_sensor) {
 		sensor_sd = cif_dev->active_sensor->sd;
@@ -125,8 +143,14 @@ static int sditf_get_set_fmt(struct v4l2_subdev *sd,
 	int ret = -EINVAL;
 	bool is_uncompact = false;
 
-	if (!cif_dev->terminal_sensor.sd)
+	if (!cif_dev->terminal_sensor.sd) {
+		v4l2_warn(&cif_dev->v4l2_dev, "%s(): null terminal_sensor.sd, fetching it now ...", __func__);
 		rkcif_update_sensor_info(&cif_dev->stream[0]);
+		if (cif_dev->terminal_sensor.sd)
+			v4l2_info(&cif_dev->v4l2_dev, "%s(): fetched terminal_sensor.sd successfully", __func__);
+		else
+			v4l2_err(&cif_dev->v4l2_dev, "%s(): failed to fetch terminal_sensor.sd", __func__);
+	}
 
 	if (cif_dev->terminal_sensor.sd) {
 		sditf_get_hdr_mode(priv);
@@ -354,8 +378,14 @@ static long sditf_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		ret = sditf_init_buf(priv);
 		return ret;
 	case RKMODULE_GET_HDR_CFG:
-		if (!cif_dev->terminal_sensor.sd)
+		if (!cif_dev->terminal_sensor.sd) {
+			v4l2_warn(&cif_dev->v4l2_dev, "%s(): null terminal_sensor.sd, fetching it now ...", __func__);
 			rkcif_update_sensor_info(&cif_dev->stream[0]);
+			if (cif_dev->terminal_sensor.sd)
+				v4l2_info(&cif_dev->v4l2_dev, "%s(): fetched terminal_sensor.sd successfully", __func__);
+			else
+				v4l2_err(&cif_dev->v4l2_dev, "%s(): failed to fetch terminal_sensor.sd", __func__);
+		}
 
 		if (cif_dev->terminal_sensor.sd) {
 			sensor_sd = cif_dev->terminal_sensor.sd;
@@ -448,8 +478,14 @@ static long sditf_compat_ioctl32(struct v4l2_subdev *sd,
 		break;
 	}
 
-	if (!cif_dev->terminal_sensor.sd)
+	if (!cif_dev->terminal_sensor.sd) {
+		v4l2_warn(&cif_dev->v4l2_dev, "%s(): null terminal_sensor.sd, fetching it now ...", __func__);
 		rkcif_update_sensor_info(&cif_dev->stream[0]);
+		if (cif_dev->terminal_sensor.sd)
+			v4l2_info(&cif_dev->v4l2_dev, "%s(): fetched terminal_sensor.sd successfully", __func__);
+		else
+			v4l2_err(&cif_dev->v4l2_dev, "%s(): failed to fetch terminal_sensor.sd", __func__);
+	}
 
 	if (cif_dev->terminal_sensor.sd) {
 		sensor_sd = cif_dev->terminal_sensor.sd;
