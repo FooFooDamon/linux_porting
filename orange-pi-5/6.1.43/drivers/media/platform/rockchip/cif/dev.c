@@ -1597,7 +1597,7 @@ static int subdev_notifier_bound(struct v4l2_async_notifier *notifier,
 	cif_dev->sensors[cif_dev->num_sensors].sd = subdev;
 	++cif_dev->num_sensors;
 
-	v4l2_err(subdev, "Async registered subdev\n");
+	v4l2_printk(KERN_NOTICE, subdev, "Async registered subdev\n");
 
 	return 0;
 }
@@ -1954,6 +1954,8 @@ int rkcif_plat_init(struct rkcif_device *cif_dev, struct device_node *node, int 
 	INIT_WORK(&cif_dev->sensor_work.work, rkcif_set_sensor_stream);
 	INIT_DELAYED_WORK(&cif_dev->work_deal_err, rkcif_deal_err_intr);
 
+	strlcpy(cif_dev->v4l2_dev.name, dev_name(dev), sizeof(cif_dev->v4l2_dev.name));
+
 	if (cif_dev->chip_id < CHIP_RV1126_CIF) {
 		if (cif_dev->inf_id == RKCIF_MIPI_LVDS) {
 			rkcif_stream_init(cif_dev, RKCIF_STREAM_MIPI_ID0);
@@ -2020,7 +2022,7 @@ int rkcif_plat_init(struct rkcif_device *cif_dev, struct device_node *node, int 
 	cif_dev->media_dev.dev = dev;
 	v4l2_dev = &cif_dev->v4l2_dev;
 	v4l2_dev->mdev = &cif_dev->media_dev;
-	strlcpy(v4l2_dev->name, dev_name(dev), sizeof(v4l2_dev->name));
+	//strlcpy(v4l2_dev->name, dev_name(dev), sizeof(v4l2_dev->name));
 
 	ret = v4l2_device_register(cif_dev->dev, &cif_dev->v4l2_dev);
 	if (ret < 0)
@@ -2036,8 +2038,11 @@ int rkcif_plat_init(struct rkcif_device *cif_dev, struct device_node *node, int 
 
 	/* create & register platefom subdev (from of_node) */
 	ret = rkcif_register_platform_subdevs(cif_dev);
-	if (ret < 0)
+	if (ret < 0) {
+		v4l2_err(v4l2_dev, "Failed to register platform sub-devices: %d\n",
+			 ret);
 		goto err_unreg_media_dev;
+	}
 
 	if (cif_dev->chip_id == CHIP_RV1126_CIF ||
 	    cif_dev->chip_id == CHIP_RV1126_CIF_LITE ||
@@ -2211,6 +2216,8 @@ static int rkcif_plat_probe(struct platform_device *pdev)
 	if (cif_dev->chip_id == CHIP_RV1106_CIF)
 		rkcif_rockit_dev_init(cif_dev);
 	pm_runtime_enable(&pdev->dev);
+
+	dev_notice(dev, "%s() done\n", __func__);
 
 	return 0;
 }
