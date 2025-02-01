@@ -1,0 +1,5 @@
+__ver__.mk
+linux_kernel.mk
+
+linux-orangepi-*.tar.gz
+
